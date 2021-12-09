@@ -137,7 +137,7 @@ protected:
 	int		intImageWidth, intImageHeight;	//图象大小
 	int		intWndSize;						//计算窗大小
 	int		intBKThreshold;					//背景值
-	int		intLightThreshold;				//光点门槛值
+	int		intLightThreshold;				//光点门槛值 
 
 
 	int		m_nDui[3][2000];
