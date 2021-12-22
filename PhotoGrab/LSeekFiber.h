@@ -1,5 +1,7 @@
 // SeekFiber.h : main header file for the SEEKFIBER application
 //
+#if !defined(AFX_LSEEKFIBER_H__8A300018_A752_4758_9892_FE28DE21F58C__INCLUDED_)
+#define AFX_LSEEKFIBER_H__8A300018_A752_4758_9892_FE28DE21F58C__INCLUDED_
 
 #include <Eigen/Dense>
 //using Eigen::MatrixXd;
@@ -7,8 +9,7 @@ using namespace Eigen;
 using namespace Eigen::internal;
 using namespace Eigen::Architecture;
 
-#if !defined(AFX_LSEEKFIBER_H__8A300018_A752_4758_9892_FE28DE21F58C__INCLUDED_)
-#define AFX_LSEEKFIBER_H__8A300018_A752_4758_9892_FE28DE21F58C__INCLUDED_
+
 
 #if _MSC_VER > 1000
 #pragma once
