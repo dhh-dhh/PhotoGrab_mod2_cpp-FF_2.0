@@ -563,7 +563,7 @@ BOOL LSeekFiber::SeekPoints(CString fn)  //计算所有光点的像素坐标
 
 		intBKThreshold = max((int)(meanGray * 1.2), intBKThreshold);
 		intLightThreshold = max(intBKThreshold,min((int)(meanGray * 4), intLightThreshold));
-		
+		//intLightThreshold = 800;
 
 		for (i = 0; i < intImageWidth; i++)
 		{
@@ -622,7 +622,7 @@ BOOL LSeekFiber::SeekPoints(CString fn)  //计算所有光点的像素坐标
 				}
 
 				//就要超出内存分配限制了，中止循环
-				if (intCounter >= intMemAlloc)
+				if (intCounter >= intMemAlloc) 
 				{
 					i = intImageWidth;
 					j = intImageHeight;
@@ -877,7 +877,8 @@ void LSeekFiber::FindQ()
 		{
 			//double a = dblCoorX[i];
 			double disDel= sqrt((centerX[i] - dblCoorX[j]) * (centerX[i] - dblCoorX[j]) + (centerY[i] - dblCoorY[j]) * (centerY[i] - dblCoorY[j]));
-			if (disDel< (FFCMax+10))
+			//double disDel = sqrt((FFCircleX[i] - dblCoorX[j]) * (FFCircleX[i] - dblCoorX[j]) + (FFCircleY[i] - dblCoorY[j]) * (FFCircleY[i] - dblCoorY[j]));
+			if (disDel< (FFCMax+ 10.0))
 			{
 				double tempX = dblCoorX[k];
 				double tempY = dblCoorY[k];
@@ -900,6 +901,7 @@ void LSeekFiber::CircleFitting(double* FFSingeX, double* FFSingeY, double* cente
 	std::set<int> deleteIndexSet; //剔除光点下标集合
 	double distanceSigma = DBL_MAX;
 	double distanceSigmaThreshold = 0.5;  //方差的阈值
+	int deletNum = 0;
 	do
 	{
 		//1.先拟合圆心数据
@@ -970,7 +972,7 @@ void LSeekFiber::CircleFitting(double* FFSingeX, double* FFSingeY, double* cente
 		distanceSigma = sqrt(accum / k); //方差
 
 		//3.根据方差去剔除
-		if (distanceSigma <= distanceSigmaThreshold) break;
+		if (distanceSigma <= distanceSigmaThreshold || deletNum > 10) break;
 		for (int i = 0; i < distanceList.size(); i++)
 		{
 			if (distanceList[i] < mean - 3 * distanceSigma || distanceList[i] > mean + 3 * distanceSigma)
@@ -978,7 +980,7 @@ void LSeekFiber::CircleFitting(double* FFSingeX, double* FFSingeY, double* cente
 				deleteIndexSet.insert(i);
 			}
 		}
-		
+		deletNum++;
 	} 
 	while (distanceSigma > distanceSigmaThreshold);
 	return;

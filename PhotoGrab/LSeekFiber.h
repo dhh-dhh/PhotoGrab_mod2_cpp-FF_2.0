@@ -148,7 +148,7 @@ protected:
 	double* FFCircleY;
 	double FFCMax = 85;//FF圆最大探查半径
 	double FFCMin = 74;//FF圆最小探查半径
-	double pixcelDisThreshold = 10.0; //Q值判断正确与粗匹配距离
+	double pixcelDisThreshold = 20.0; //Q值判断正确与粗匹配距离
 	double* FFSingeX;
 	double* FFSingeY;
 	double* centerX;//FF圆心像素坐标
