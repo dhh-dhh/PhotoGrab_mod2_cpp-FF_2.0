@@ -109,9 +109,13 @@ BOOL LSeekFiber::Init()
 		AfxMessageBox(_T("Failed to read FFCircle file."));
 		return FALSE;
 	}
+	if (!FFCuMatch())
+	{
+		AfxMessageBox(_T("Failed to FFCuMatch."));
+		return FALSE;
+	}
 
-	
-	
+
 	return TRUE;
 }
 BOOL LSeekFiber::GetFFCircle() //放入相機初始化中
@@ -126,9 +130,11 @@ BOOL LSeekFiber::GetFFCircle() //放入相機初始化中
 	char unuse[100];
 	intQNum = 0;
 	//fscanf(FFCFile, "%lf", &FFNum);
+	char unit[10];
 	while (!feof(FFCFile))
 	{
-		fscanf(FFCFile, "%lf %lf", &FFCircleX[intQNum], &FFCircleY[intQNum]);//读取Q的pixcel坐标
+		fscanf(FFCFile, "%s %lf %lf",unit, &FFCircleX[intQNum], &FFCircleY[intQNum]);//读取Q的pixcel坐标
+		FFCircleUnit.push_back(string(unit));
 		FFCircleX[intQNum] += offSetX;
 		FFCircleY[intQNum] += offSetY;
 		//fgets(unuse,1000, FFCFile);
@@ -140,8 +146,6 @@ BOOL LSeekFiber::GetFFCircle() //放入相機初始化中
 
 BOOL LSeekFiber::GetFFLilun() //放入相機初始化中
 {
-	
-
 	//char* FFLiLunPath;
 	//FFLiLunPath = "F:\\Paohe\\bin\\FFLilun.txt";//FFCircle file path
 	FILE* FFLiLunFile;
@@ -152,10 +156,12 @@ BOOL LSeekFiber::GetFFLilun() //放入相機初始化中
 	//fscanf(FFCFile, "%lf", &FFNum);
 	char c;
 	char buf[100] = { 0 };
+	char unit[10];
 	int temp = 0;
 	while (!feof(FFLiLunFile))
 	{
-		fscanf_s(FFLiLunFile, "%lf %lf", &FFLilunX[temp], &FFLilunY[temp]);//读取Q的理论坐标
+		fscanf(FFLiLunFile, "%s %lf %lf", unit ,&FFLilunX[temp], &FFLilunY[temp]);//读取Q的理论坐标
+		FFLilunUnit.push_back(string(unit));
 		temp++;
 		//fgets(buf, 100, FFLiLunFile);
 		c = fgetc(FFLiLunFile);//防止多读一次
@@ -172,6 +178,31 @@ BOOL LSeekFiber::GetFFLilun() //放入相機初始化中
 	//}
 	return true;
 }
+
+bool LSeekFiber::FFCuMatch()
+{
+	//光纤匹配
+	//FFMatchParIndex = new vector<pair<int, int>>(intMemAlloc, make_pair(0, 0));
+	//if (!FFMatchParIndex)return FALSE;
+
+	for (int i = 0; i < FFCircleUnit.size(); i++)
+	{
+		for (int j = 0; j < FFLilunUnit.size(); j++)
+		{
+			if (FFCircleUnit[i] == FFLilunUnit[j]) {
+				FFMatchParIndex.push_back(make_pair(i, j)); 
+				continue;
+			}
+		}
+	}
+	if (FFMatchParIndex.size() < 20)
+	{
+		return false;
+	}
+	return true;
+}
+
+
 
 BOOL LSeekFiber::GetConfigOffset()
 {
@@ -305,6 +336,11 @@ BOOL LSeekFiber::MemAlloc()
 	if (!micronQCoorX)return FALSE;
 	micronQCoorY = new double[intMemAlloc];
 	if (!micronQCoorY)return FALSE;
+
+
+	//vector<pair<int, int>> FFMatchParIndex; //参考光纤粗匹配队的对应编号，像素矩阵下标 --- 理论位置矩阵下标
+	/*vector<string> FFCircleUnit;
+	vector<string> FFLilunUnit;*/
 
 	//Py_SetPythonHome(L"D:\\anaconda");  //系统的python路径
 	//Py_Initialize();			//使用python之前，要调用Py_Initialize();这个函数进行初始化 
@@ -673,6 +709,7 @@ void LSeekFiber::NiheParamCpp(int biaoding)
 	MatrixXd BX(biaoding/2, 1);
 	MatrixXd BY(biaoding/2, 1);
 
+
 	for (int i = 0,j=0; i < intQNum; i++)
 	{
 		if (radius[i] == -1.0)
@@ -681,11 +718,10 @@ void LSeekFiber::NiheParamCpp(int biaoding)
 		}
 		else
 		{
-			
-			x(j, 0) = centerX[i];
-			y(j, 0) = centerY[i];
-			lilun_x(j, 0) = FFLilunX[i];
-			lilun_y(j, 0) = FFLilunY[i];
+			x(j, 0) = centerX[FFMatchParIndex[i].first];
+			y(j, 0) = centerY[FFMatchParIndex[i].first];
+			lilun_x(j, 0) = FFLilunX[FFMatchParIndex[i].second];
+			lilun_y(j, 0) = FFLilunY[FFMatchParIndex[i].second];
 			j++;
 		}
 		

@@ -168,7 +168,10 @@ protected:
 	void LSeekFiber::NiheParamCpp(int biaoding);
 	void LSeekFiber::PixelToMicron(int biaoding);
 
-
+	vector<pair<int, int>> FFMatchParIndex; //参考光纤粗匹配队的对应编号，像素矩阵下标 --- 理论位置矩阵下标
+	vector<string> FFCircleUnit;
+	vector<string> FFLilunUnit;
+	bool FFCuMatch();
 };
 
 
