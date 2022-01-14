@@ -53,6 +53,8 @@ protected:
 
 	BOOL GetConfig();		//读取config.ini
 	BOOL GetConfigOffset();   //读取config_offset.ini
+	BOOL GetConstParam(); //放入相機初始化中
+
 	double offSetX;
 	double offSetY;
 	BOOL GetFFLilun(); //讀取FF理論
@@ -172,6 +174,12 @@ protected:
 	vector<string> FFCircleUnit;
 	vector<string> FFLilunUnit;
 	bool FFCuMatch();
+
+
+	double* ConstParamerX;
+	double* ConstParamerY;
+
+	
 };
 
 

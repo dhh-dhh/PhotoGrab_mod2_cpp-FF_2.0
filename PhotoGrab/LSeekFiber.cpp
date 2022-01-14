@@ -8,7 +8,6 @@ using namespace Eigen::Architecture;
 
 #include "stdafx.h"
 #include "LSeekFiber.h"
-
 #include <iostream>
 #include "math.h"
 #include <string>
@@ -18,6 +17,7 @@ using namespace Eigen::Architecture;
 #include <algorithm>
 #include<numeric>
 
+#define USECONSTPARAMER  true  //是否使用固定参数进行拟合计算
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -35,6 +35,10 @@ static char THIS_FILE[] = __FILE__;
 #ifndef FFOFFSETPATH		
 #define FFOFFSETPATH "F:\\Paohe\\bin\\config_offset.ini" //config_offset file path	 //光纤偏移量
 #endif	
+#ifndef CONSTPARAMER		
+#define CONSTPARAMER "F:\\Paohe\\bin\\config_constparamer.ini" //config_offset file path	 //光纤偏移量
+#endif	
+
 
 /////////////////////////////////////////////////////////////////////////////
 // LSeekFiber construction
@@ -114,10 +118,39 @@ BOOL LSeekFiber::Init()
 		AfxMessageBox(_T("Failed to FFCuMatch."));
 		return FALSE;
 	}
+	if (!GetConstParam())
+	{
+		AfxMessageBox(_T("Failed to ConstParam."));
+		return FALSE;
+	}
+
 
 
 	return TRUE;
 }
+
+BOOL LSeekFiber::GetConstParam() //放入相機初始化中
+{
+	FILE* CPFile;
+	if ((CPFile = fopen(CONSTPARAMER, "rt")) <= 0)//open file
+	{
+		return false;
+	}
+	int n = 0;
+	while (!feof(CPFile))
+	{
+		//double* ConstParamerX;
+		fscanf(CPFile, "%lf %lf", &ConstParamerX[n], &ConstParamerY[n]);//读取固定参数
+		double tempx = ConstParamerX[n];
+		double tempY = ConstParamerY[n];
+		char c = fgetc(CPFile);//防止多读一次
+		n++;
+	}
+	fclose(CPFile);
+	return true;
+}
+
+
 BOOL LSeekFiber::GetFFCircle() //放入相機初始化中
 {
 	FILE* FFCFile;
@@ -139,6 +172,11 @@ BOOL LSeekFiber::GetFFCircle() //放入相機初始化中
 		FFCircleY[intQNum] += offSetY;
 		//fgets(unuse,1000, FFCFile);
 		intQNum++;
+		//if (intQNum >= 40)
+		//{
+		//	break;
+		//}
+		char c = fgetc(FFCFile);//防止多读一次
 	}
 	fclose(FFCFile);
 	return true;
@@ -337,6 +375,13 @@ BOOL LSeekFiber::MemAlloc()
 	micronQCoorY = new double[intMemAlloc];
 	if (!micronQCoorY)return FALSE;
 
+	
+	ConstParamerX = new double[intMemAlloc];
+	if (!ConstParamerX)return FALSE;
+	ConstParamerY = new double[intMemAlloc];
+	if (!ConstParamerY)return FALSE;
+
+
 
 	//vector<pair<int, int>> FFMatchParIndex; //参考光纤粗匹配队的对应编号，像素矩阵下标 --- 理论位置矩阵下标
 	/*vector<string> FFCircleUnit;
@@ -424,6 +469,9 @@ void LSeekFiber::MemRelease()
 	if (FFLilunY)delete[] FFLilunY;
 	if (micronQCoorX)delete[] micronQCoorX;
 	if (micronQCoorY)delete[] micronQCoorY;
+
+	if (ConstParamerX)delete[] ConstParamerX;
+	if (ConstParamerY)delete[] ConstParamerY;
 	
 }
 
@@ -802,13 +850,28 @@ void LSeekFiber::NiheParamCpp(int biaoding)
 	paramX_array = A.inverse() * BX;
 	paramY_array = A.inverse() * BY;
 
-	for (int i = 0; i < biaoding / 2; i++)
+
+	if (USECONSTPARAMER != true)
 	{
-		double a = paramX_array(i, 0);
-		double b = paramY_array(i, 0);
-		paramX[i] = paramX_array(i,0);
-		paramY[i] = paramY_array(i, 0);
+		for (int i = 0; i < biaoding / 2; i++)
+		{
+			double a = paramX_array(i, 0);
+			double b = paramY_array(i, 0);
+			paramX[i] = paramX_array(i, 0);
+			paramY[i] = paramY_array(i, 0);
+		}
 	}
+	else
+	{
+		for (int i = 0; i < biaoding / 2; i++)
+		{
+			double a = ConstParamerX[i];
+			double b = ConstParamerY[i];
+			paramX[i] = ConstParamerX[i];
+			paramY[i] = ConstParamerY[i];
+		}
+	}
+	
 	return;
 	
 }
