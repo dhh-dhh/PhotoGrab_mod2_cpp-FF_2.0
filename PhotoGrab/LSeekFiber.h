@@ -179,7 +179,14 @@ protected:
 	double* ConstParamerX;
 	double* ConstParamerY;
 
+
+	double RR = 20033700.0; 
+	void LSeekFiber::XYToGlobleXYZ();
+	double* dblCoorZ1;
+	double* alpha;
+	double* beta;
 	
+
 };
 
 

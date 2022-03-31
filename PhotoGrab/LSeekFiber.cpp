@@ -17,7 +17,7 @@ using namespace Eigen::Architecture;
 #include <algorithm>
 #include<numeric>
 
-#define USECONSTPARAMER  true  //是否使用固定参数进行拟合计算
+#define USECONSTPARAMER  false  //是否使用固定参数进行拟合计算
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -381,6 +381,13 @@ BOOL LSeekFiber::MemAlloc()
 	ConstParamerY = new double[intMemAlloc];
 	if (!ConstParamerY)return FALSE;
 
+	dblCoorZ1 = new double[intMemAlloc];
+	if (!dblCoorZ1)return FALSE;
+	alpha = new double[intMemAlloc];
+	if (!alpha)return FALSE;
+	beta = new double[intMemAlloc];
+	if (!beta)return FALSE;
+
 
 
 	//vector<pair<int, int>> FFMatchParIndex; //参考光纤粗匹配队的对应编号，像素矩阵下标 --- 理论位置矩阵下标
@@ -473,6 +480,10 @@ void LSeekFiber::MemRelease()
 	if (ConstParamerX)delete[] ConstParamerX;
 	if (ConstParamerY)delete[] ConstParamerY;
 	
+	if (dblCoorZ1)delete[] dblCoorZ1;
+	if (alpha)delete[] dblCoorZ1;
+	if (beta)delete[] dblCoorZ1;
+
 }
 
 
@@ -721,6 +732,8 @@ BOOL LSeekFiber::SeekPoints(CString fn)  //计算所有光点的像素坐标
 		PixelToMicron(biaoding);//所有光纤与FF坐标转换为微米坐标
 		SortAllPoints(); //匹配计算
 		str =(LPCSTR)(rawfn.Left(rawfn.GetLength() - 4) + ".txt");
+
+		XYToGlobleXYZ();
 		WriteMicronTxt(str);//写最终文件
 
 	}
@@ -1304,6 +1317,29 @@ void LSeekFiber::SortAllPoints()
 	intLightNum = k;
 }
 
+void LSeekFiber::XYToGlobleXYZ()
+{
+	for (int i = 0; i < intPNum; i++)
+	{
+		dblCoorZ1[i] = -(RR - sqrt(RR*RR - (dblCoorY1[i] * dblCoorY1[i] + dblCoorX1[i]*dblCoorX1[i])));
+		alpha[i] = asin(dblCoorY1[i] / RR);
+		beta[i] = asin(dblCoorX1[i] / RR);
+	}
+	for (int i = 0; i < intQNum; i++)
+	{
+		dblCoorZ1[i+ intPNum] = -(RR - sqrt(RR * RR - (micronQCoorY[i] * micronQCoorY[i] + micronQCoorX[i] * micronQCoorX[i])));
+		alpha[i+ intPNum] = asin(micronQCoorY[i] / RR);
+		beta[i+ intPNum] = asin(micronQCoorX[i] / RR);
+	}
+	for (int i = 0; i < intQNum; i++)
+	{
+		dblCoorZ1[i + intPNum+ intQNum] = -(RR - sqrt(RR * RR - (FFLilunY[i] * FFLilunY[i] + FFLilunX[i] * FFLilunX[i])));
+		alpha[i + intPNum+ intQNum] = asin(FFLilunY[i] / RR);
+		beta[i + intPNum+ intQNum] = asin(FFLilunX[i] / RR);
+	}
+}
+
+
 void LSeekFiber::WriteMicronTxt(CString str)
 {
 	USES_CONVERSION;
@@ -1314,29 +1350,31 @@ void LSeekFiber::WriteMicronTxt(CString str)
 	FILE* ff;
 	errno_t err;
 	err = fopen_s(&ff, Path_Micron, "w+");
-
-	for (i = 0; i < intPNum; i++)
+	fprintf_s(ff, "%6i\n", intPNum+ intQNum);
+	for (i = 0; i < intPNum; i++)//工作光纤
 	{
-		if (pixelPCoorX1[i] == 0.0 && pixelPCoorY1[i] == 0.0)
+		if (pixelPCoorX1[i] == 0.0 || pixelPCoorY1[i] == 0.0 || dblCoorX1[i] == 0.0 || dblCoorY1[i] == 0.0)
 		{
-			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", sCellNameP[i].c_str(), 0.0,0.0,0.0,0.0);
+			//fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", sCellNameP[i].c_str(), 0.0,0.0,0.0,0.0);
+			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", sCellNameP[i].c_str(), dblZBCoorX[i] - 980, dblZBCoorY[i]+5560, 0.0, 0.0,0.0, 0.0, 0.0);
+			
 		}
 		else
 		{
-			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", sCellNameP[i].c_str(), dblCoorX1[i], dblCoorY1[i], pixelPCoorX1[i], pixelPCoorY1[i]);
+			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.28f\t%12.28f\t%12.6f\t%12.6f\n", sCellNameP[i].c_str(), dblCoorX1[i], dblCoorY1[i], dblCoorZ1[i], beta[i], alpha[i], pixelPCoorX1[i], pixelPCoorY1[i]);
 		}
 
 	}
-	for (i = 0; i < intQNum; i++)
+	for (i = 0; i < intQNum; i++)//参考光纤
 	{
 		double dis = sqrt((micronQCoorX[i] - FFLilunX[i]) * (micronQCoorX[i] - FFLilunX[i]) + (micronQCoorY[i] - FFLilunY[i]) * (micronQCoorY[i] - FFLilunY[i]));
 		if (dis < 3000.0)
 		{
-			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", sCellNameQ[i].c_str(), micronQCoorX[i], micronQCoorY[i], centerX[i], centerY[i]);
+			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.28f\t%12.28f\t%12.6f\t%12.6f\n", sCellNameQ[i].c_str(), micronQCoorX[i], micronQCoorY[i], dblCoorZ1[i+ intPNum], beta[i+ intPNum], alpha[i+ intPNum], centerX[i], centerY[i]);
 		}
 		else
 		{
-			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", sCellNameQ[i].c_str(), FFLilunX[i], FFLilunY[i], centerX[i], centerY[i]);
+			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.28f\t%12.28f\t%12.6f\t%12.6f\n", sCellNameQ[i].c_str(), FFLilunX[i], FFLilunY[i], dblCoorZ1[i + intPNum+ intQNum], beta[i + intPNum+ intQNum], alpha[i + intPNum+ intQNum], centerX[i], centerY[i]);
 		}
 
 	}
@@ -1348,7 +1386,7 @@ void LSeekFiber::WriteMicronTxt(CString str)
 		}
 		else
 		{
-			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", "nouse", dblCoorX1[i], dblCoorY1[i], pixelPCoorX1[i], pixelPCoorY1[i]);
+			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", "nouse", dblCoorX1[i], dblCoorY1[i], 0.0, 0.0, 0.0, pixelPCoorX1[i], pixelPCoorY1[i]);
 		}
 
 	}
@@ -1360,7 +1398,7 @@ void LSeekFiber::WriteMicronTxt(CString str)
 		//}
 		//else
 		//{
-			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", "delpoints", 0.0, 0.0, dblCoorX[i], dblCoorY[i]);
+			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.6f\t%12.6f\t%12.6f\t%12.6f\n", "delpoints", 0.0, 0.0, 0.0, 0.0, 0.0, dblCoorX[i], dblCoorY[i]);
 		//}
 
 	}
@@ -1369,3 +1407,30 @@ void LSeekFiber::WriteMicronTxt(CString str)
 	return;
 
 }
+
+
+//void LCell::GlobleXYToCellXY(double gx, double gy, double& cx, double& cy)
+//{
+//	double alpha = asin(m_dY / RR);
+//	double beta = asin(m_dX / RR / cos(alpha));
+//
+//	//	double alpha = m_dXY[5];
+//	//	double beta = m_dXY[6];
+//	double gz = sqrt(RR * RR - gx * gx - gy * gy);
+//
+//	cx = gx * cos(beta) - gz * sin(beta);
+//	cy = -gx * sin(alpha) * sin(beta) + gy * cos(alpha) - gz * sin(alpha) * cos(beta);
+//}
+//
+//void LCell::CellXYToGlobleXY(double cx, double cy, double& gx, double& gy)
+//{
+//	double alpha = asin(m_dY / RR);
+//	double beta = asin(m_dX / RR / cos(alpha));
+//
+//	//	double alpha = m_dXY[5];
+//	//	double beta = m_dXY[6];
+//	double cz = RR;
+//
+//	gx = cx * cos(beta) - cy * sin(alpha) * sin(beta) + cz * cos(alpha) * sin(beta);
+//	gy = cy * cos(alpha) + cz * sin(alpha);
+//}
