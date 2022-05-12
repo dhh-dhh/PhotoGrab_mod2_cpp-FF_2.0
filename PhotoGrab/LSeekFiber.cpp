@@ -1363,7 +1363,6 @@ void LSeekFiber::WriteMicronTxt(CString str)
 		{
 			fprintf_s(ff, "%s\t%12.6f\t%12.6f\t%12.6f\t%12.28f\t%12.28f\t%12.6f\t%12.6f\n", sCellNameP[i].c_str(), dblCoorX1[i], dblCoorY1[i], dblCoorZ1[i], beta[i], alpha[i], pixelPCoorX1[i], pixelPCoorY1[i]);
 		}
-
 	}
 	for (i = 0; i < intQNum; i++)//²Î¿¼¹âÏË
 	{

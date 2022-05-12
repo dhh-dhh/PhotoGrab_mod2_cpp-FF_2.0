@@ -148,8 +148,8 @@ protected:
 
 	double* FFCircleX;//txt文件读取大概坐标
 	double* FFCircleY;
-	double FFCMax = 85;//FF圆最大探查半径
-	double FFCMin = 74;//FF圆最小探查半径
+	double FFCMax = 95;//FF圆最大探查半径
+	double FFCMin = 75;//FF圆最小探查半径
 	double pixcelDisThreshold = 20.0; //Q值判断正确与粗匹配距离
 	double* FFSingeX;
 	double* FFSingeY;
